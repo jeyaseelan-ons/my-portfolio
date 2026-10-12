@@ -1,0 +1,91 @@
+{
+  "profile": {
+    "name": "S Jeyaseelan",
+    "fullName": "Jeyaseelan S",
+    "title": "Computer Science Engineering Student, Creative Developer, and AI/ML Enthusiast",
+    "location": "Tirunelveli, Tamil Nadu, India",
+    "college": "Anna University Affiliated Engineering College, Tirunelveli",
+    "education": {
+      "degree": "Bachelor of Engineering (B.E.) - Computer Science and Engineering",
+      "duration": "2023 - 2027",
+      "cgpa": "8.16",
+      "higherSecondary": {
+        "stream": "Computer Science",
+        "percentage": "86%",
+        "location": "Tirunelveli, Tamil Nadu"
+      },
+      "secondary": {
+        "type": "SSLC",
+        "location": "Tirunelveli, Tamil Nadu"
+      }
+    },
+    "contact": {
+      "email": "jeyaseelan26206@gmail.com",
+      "phone": "+91 9042201784",
+      "location": "Tirunelveli, Tamil Nadu, India"
+    }
+  },
+  "skills": {
+    "programming": ["Python", "Java", "C", "JavaScript (ES6+)", "HTML5", "CSS3", "PHP", "SQL"],
+    "frameworks": ["React.js", "Node.js", "Express", "MongoDB", "RESTful Services", "Canvas API"],
+    "aiMl": ["NLP Document Intelligence", "Python ML", "Generative Pipelines", "LLM Integration"],
+    "design3d": ["Blender 3D", "Spatial Web", "3D Motion", "SVG Filters"],
+    "tools": ["Git", "GitHub", "VS Code", "Figma", "Postman", "Linux"]
+  },
+  "projects": [
+    {
+      "name": "Retail Pro",
+      "type": "Full Stack / Database / Web",
+      "year": "2025-2026",
+      "description": "A full-stack retail management platform designed to simplify product, inventory, sales, and customer management.",
+      "role": "Lead Developer"
+    },
+    {
+      "name": "CRUX",
+      "type": "AI / NLP / Python / Web",
+      "year": "2025",
+      "description": "AI-powered document summarization and knowledge extraction platform designed to transform complex documents into concise, useful insights.",
+      "role": "AI Developer"
+    },
+    {
+      "name": "EcoBridge",
+      "type": "React / Node.js / IoT / Sustainability",
+      "year": "2026",
+      "description": "An SDG-focused platform connecting sustainable ideas, environmental data, green initiatives, and community-driven action.",
+      "role": "Full Stack Developer"
+    },
+    {
+      "name": "Theatre",
+      "type": "Java / OOP / Database / Software Engineering",
+      "year": "2025",
+      "description": "A software system for managing theatre seats, reservations, customer details, and booking operations.",
+      "role": "Java Developer"
+    },
+    {
+      "name": "Virtual Resume",
+      "type": "HTML / CSS / JavaScript / Portfolio",
+      "year": "2026",
+      "description": "A modern interactive portfolio that presents education, technical skills, projects, achievements, experience, and professional profile.",
+      "role": "Frontend Developer"
+    }
+  ],
+  "achievements": [
+    "21 Days Coding Challenge - Coding Ninjas",
+    "NPTEL - Python for Data Science",
+    "NPTEL - Programming in Java",
+    "NPTEL - Internet of Things (IoT)",
+    "Data Genesis Hackathon",
+    "InnovateX 2025 - Prize Winner",
+    "Exploring Generative AI Workshop",
+    "GeeksforGeeks Workshop",
+    "Java Programming Online Internship",
+    "C Programming Quiz Prize",
+    "Aptitude Quiz",
+    "Android Development Course"
+  ],
+  "interests": ["Web Development", "3D Web Design", "AI/ML", "Hackathons", "Creative Engineering"],
+  "internshipInfo": {
+    "available": true,
+    "notes": "Open to internship opportunities and full-time roles in creative development, full-stack engineering, and AI/ML positions."
+  }
+}
