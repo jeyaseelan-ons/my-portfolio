@@ -159,6 +159,12 @@ export default async function handler(req, res) {
   });
 }
 
+function fetchWithTimeout(url, opts, ms = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return fetch(url, { ...opts, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
 async function callProvider(provider, message, kb) {
   const context = buildContext(kb);
   if (provider === 'gemini') {
@@ -166,7 +172,7 @@ async function callProvider(provider, message, kb) {
     if (!key) throw new Error('no key');
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
     const body = { contents: [{ parts: [{ text: context + '\n\nQ: ' + message + '\nA:' }] }] };
-    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const r = await fetchWithTimeout(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     if (!r.ok) throw new Error('gemini fail');
     const j = await r.json();
     const text = j.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -184,7 +190,7 @@ async function callProvider(provider, message, kb) {
       temperature: 0.7,
       max_tokens: 300
     };
-    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify(body) });
+    const r = await fetchWithTimeout(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify(body) });
     if (!r.ok) throw new Error('groq fail');
     const j = await r.json();
     const text = j.choices?.[0]?.message?.content;
@@ -194,7 +200,7 @@ async function callProvider(provider, message, kb) {
     if (!key) throw new Error('no key');
     const url = 'https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta';
     const body = { inputs: context + '\n\nQ: ' + message + '\nA:', parameters: { max_new_tokens: 250, temperature: 0.7 } };
-    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify(body) });
+    const r = await fetchWithTimeout(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify(body) });
     if (!r.ok) throw new Error('hf fail');
     const j = await r.json();
     const text = Array.isArray(j) ? j[0]?.generated_text : j.generated_text;
