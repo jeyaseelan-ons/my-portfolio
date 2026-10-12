@@ -1,1 +1,11 @@
 resume.pdf
+resume.pdf
+
+.env
+.vercel
+data/*.xlsx
+data/*.db
+.DS_Store
+thumbnails
+*.log
+api/*config*secret*
