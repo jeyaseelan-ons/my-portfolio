@@ -39,34 +39,47 @@ function normalize(q) {
   return q.toLowerCase().trim();
 }
 
+function buildContext(kb) {
+  if (!kb) return '';
+  const p = kb.profile;
+  const edu = p.education;
+  const skills = [...(kb.skills.programming || []), ...(kb.skills.frameworks || []), ...(kb.skills.aiMl || [])];
+  const projects = (kb.projects || []).map(pr => pr.name).join(', ');
+  const achievements = (kb.achievements || []).join(', ');
+  return `You are J Bot, an AI portfolio assistant for ${p.fullName}. Answer concisely using ONLY these verified facts — name ${p.fullName}, ${p.title}, ${edu.degree} (${edu.duration}) at ${p.college}, CGPA ${edu.cgpa}, HSC ${edu.higherSecondary.percentage}%, location ${p.location}. Skills: ${skills.join(', ')}. Projects: ${projects}. Achievements: ${achievements}. Contact: ${p.contact.email}, ${p.contact.phone}. Be concise and honest; if unsure, say so briefly.`;
+}
+
 function findAnswer(q, kb) {
   if (!kb) return null;
   const nq = normalize(q);
+  const p = kb.profile;
+  const edu = p.education;
+
   if (nq.includes('who are you') || nq.includes('what is j bot') || nq.includes('jbot')) {
-    return I'm J Bot, Jeyaseelan's AI assistant. I can answer questions about his background, education, skills, projects, achievements, and contact info.;
+    return `I'm J Bot, ${p.fullName}'s AI assistant. I can answer questions about his background, education, skills, projects, achievements, and contact info.`;
   }
   if (nq.includes('name') || nq.includes('jeyaseelan')) {
-    return Jeyaseelan is a Computer Science Engineering student at Anna University-affiliated college in Tirunelveli, Tamil Nadu. CGPA: , 2023-2027.;
+    return `${p.fullName} is a ${p.title}. Based in ${p.location}.`;
   }
   if (nq.includes('skill') || nq.includes('tech') || nq.includes('language')) {
-    const skills = kb.skills.programming.concat(kb.skills.frameworks).concat(kb.skills.aiMl).slice(0, 15).join(', ');
-    return Technical skills include: .;
+    const skills = [...kb.skills.programming, ...kb.skills.frameworks, ...kb.skills.aiMl];
+    return `Technical skills include: ${skills.join(', ')}.`;
   }
   if (nq.includes('project') || nq.includes('crux') || nq.includes('ecobridge') || nq.includes('retail') || nq.includes('theatre')) {
-    const list = kb.projects.map(p => ${p.name} (, ): ).join('; ');
-    return Projects: ;
+    const list = kb.projects.map(pr => `${pr.name} (${pr.role}, ${pr.year}) — ${pr.description}`).join('; ');
+    return `Projects: ${list}`;
   }
   if (nq.includes('contact') || nq.includes('email') || nq.includes('phone')) {
-    return Contact: , , .;
+    return `Contact: ${p.contact.email} | ${p.contact.phone} | ${p.location}.`;
   }
   if (nq.includes('education') || nq.includes('college') || nq.includes('cgpa') || nq.includes('hsc') || nq.includes('12th')) {
-    return Education: B.E. CSE at Anna University-affiliated college, Tirunelveli (2023-2027), CGPA . HSC:  in .;
+    return `Education: ${edu.degree} (${edu.duration}) at ${p.college}. CGPA: ${edu.cgpa}. HSC: ${edu.higherSecondary.percentage} in ${edu.higherSecondary.stream}.`;
   }
   if (nq.includes('achievement') || nq.includes('hackathon') || nq.includes('award') || nq.includes('certificate')) {
-    return Achievements include: .;
+    return `Achievements include: ${(kb.achievements || []).join(', ')}.`;
   }
   if (nq.includes('internship')) {
-    return Open to internships and full-time roles in creative development, full-stack engineering, and AI/ML. Email: .;
+    return `${kb.internshipInfo.notes} Email: ${p.contact.email}.`;
   }
   return null;
 }
@@ -147,11 +160,11 @@ export default async function handler(req, res) {
 }
 
 async function callProvider(provider, message, kb) {
-  const context = You are J Bot, a portfolio assistant for S Jeyaseelan. Answer based on verified info: name S Jeyaseelan, Computer Science Engineering student (2023-2027) at Anna University-affiliated college in Tirunelveli, CGPA 8.16, HSC 86%, skills include Python/Java/C/JS/React/Node/AI/ML, projects: Retail Pro, CRUX, EcoBridge, Theatre, Virtual Resume. Contact: jeyaseelan26206@gmail.com, +91 9042201784. Be concise and honest; if not in verified info, say so briefly.;
+  const context = buildContext(kb);
   if (provider === 'gemini') {
     const key = process.env.GEMINI_API_KEY;
     if (!key) throw new Error('no key');
-    const url = https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
     const body = { contents: [{ parts: [{ text: context + '\n\nQ: ' + message + '\nA:' }] }] };
     const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     if (!r.ok) throw new Error('gemini fail');
@@ -171,7 +184,7 @@ async function callProvider(provider, message, kb) {
       temperature: 0.7,
       max_tokens: 300
     };
-    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': Bearer  }, body: JSON.stringify(body) });
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify(body) });
     if (!r.ok) throw new Error('groq fail');
     const j = await r.json();
     const text = j.choices?.[0]?.message?.content;
@@ -181,7 +194,7 @@ async function callProvider(provider, message, kb) {
     if (!key) throw new Error('no key');
     const url = 'https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta';
     const body = { inputs: context + '\n\nQ: ' + message + '\nA:', parameters: { max_new_tokens: 250, temperature: 0.7 } };
-    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': Bearer  }, body: JSON.stringify(body) });
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify(body) });
     if (!r.ok) throw new Error('hf fail');
     const j = await r.json();
     const text = Array.isArray(j) ? j[0]?.generated_text : j.generated_text;

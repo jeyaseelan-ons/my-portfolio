@@ -4,28 +4,27 @@
     const widget = document.createElement('div');
     widget.id = 'jbot-widget';
     widget.className = 'jbot-widget';
-    widget.innerHTML = 
-      <button class="jbot-toggle" id="jbot-toggle" aria-label="Open J Bot">JB</button>
-      <div class="jbot-chat" id="jbot-chat">
-        <div class="jbot-header">
-          <div class="jbot-title">J Bot</div>
-          <button class="jbot-theme-toggle" id="jbot-theme">??</button>
-        </div>
-        <div class="jbot-welcome">Hey! I'm J Bot, Jeyaseelan's AI assistant. Ask me about his skills, projects, achievements, or anything else!</div>
-        <div class="jbot-suggestions">
-          <button class="jbot-suggest">Tell me about Jeyaseelan</button>
-          <button class="jbot-suggest">What are his technical skills?</button>
-          <button class="jbot-suggest">Explain his best projects</button>
-          <button class="jbot-suggest">How can I contact him?</button>
-        </div>
-        <div class="jbot-messages" id="jbot-messages"></div>
-        <div class="jbot-input-row">
-          <input type="text" class="jbot-input" id="jbot-input" placeholder="Type your question..." />
-          <button class="jbot-send" id="jbot-send">Send</button>
-        </div>
-        <div class="jbot-footer">Powered by AI</div>
-      </div>
-    ;
+    widget.innerHTML =
+      '<button class="jbot-toggle" id="jbot-toggle" aria-label="Open J Bot">JB</button>' +
+      '<div class="jbot-chat" id="jbot-chat">' +
+        '<div class="jbot-header">' +
+          '<div class="jbot-title">J Bot</div>' +
+          '<button class="jbot-theme-toggle" id="jbot-theme">&#127775;</button>' +
+        '</div>' +
+        '<div class="jbot-welcome">Hey! I\'m J Bot, Jeyaseelan\'s AI assistant. Ask me about his skills, projects, achievements, or anything else!</div>' +
+        '<div class="jbot-suggestions">' +
+          '<button class="jbot-suggest">Tell me about Jeyaseelan</button>' +
+          '<button class="jbot-suggest">What are his technical skills?</button>' +
+          '<button class="jbot-suggest">Explain his best projects</button>' +
+          '<button class="jbot-suggest">How can I contact him?</button>' +
+        '</div>' +
+        '<div class="jbot-messages" id="jbot-messages"></div>' +
+        '<div class="jbot-input-row">' +
+          '<input type="text" class="jbot-input" id="jbot-input" placeholder="Type your question..." />' +
+          '<button class="jbot-send" id="jbot-send">Send</button>' +
+        '</div>' +
+        '<div class="jbot-footer">Powered by AI</div>' +
+      '</div>';
     document.body.appendChild(widget);
 
     const toggle = document.getElementById('jbot-toggle');
@@ -39,29 +38,29 @@
     let theme = localStorage.getItem('jbot_theme') || 'light';
     applyTheme(theme);
 
-    toggle.addEventListener('click', () => {
+    toggle.addEventListener('click', function () {
       chat.classList.toggle('active');
     });
 
-    themeBtn.addEventListener('click', () => {
+    themeBtn.addEventListener('click', function () {
       theme = theme === 'light' ? 'dark' : 'light';
       localStorage.setItem('jbot_theme', theme);
       applyTheme(theme);
     });
 
     function applyTheme(t) {
-      themeBtn.textContent = t === 'light' ? '??' : '??';
+      themeBtn.textContent = t === 'light' ? '\u{1F319}' : '\u{2600}';
     }
 
-    suggests.forEach(btn => {
-      btn.addEventListener('click', () => {
+    suggests.forEach(function (btn) {
+      btn.addEventListener('click', function () {
         input.value = btn.textContent;
         sendMessage();
       });
     });
 
     send.addEventListener('click', sendMessage);
-    input.addEventListener('keypress', (e) => {
+    input.addEventListener('keypress', function (e) {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendMessage();

@@ -3,8 +3,11 @@ resume.pdf
 
 .env
 .vercel
+node_modules/
+.env.local
 data/*.xlsx
 data/*.db
+data/unanswered.jsonl
 .DS_Store
 thumbnails
 *.log
