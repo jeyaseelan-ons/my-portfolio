@@ -162,9 +162,17 @@ const IntroController = {
 
             if (nameWrapper) {
                 nameWrapper.addEventListener('click', () => this.toggleIdentity());
+                nameWrapper.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.toggleIdentity();
+                }, { passive: false });
             }
             if (portraitStage) {
                 portraitStage.addEventListener('click', () => this.toggleIdentity());
+                portraitStage.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.toggleIdentity();
+                }, { passive: false });
             }
             if (langTogglePill) {
                 langTogglePill.addEventListener('click', () => this.toggleIdentity());
@@ -174,13 +182,12 @@ const IntroController = {
         },
 
         startAutoTimeline() {
-            // Do not automatically switch the website language to Tamil on mobile
-            if (window.innerWidth <= 900) return;
+            // Auto-switch to Tamil after 5 seconds on all devices
             setTimeout(() => {
-                if (window.innerWidth > 900 && STATE.language === 'en' && !STATE.isTransforming) {
+                if (STATE.language === 'en' && !STATE.isTransforming) {
                     this.toggleIdentity();
                 }
-            }, 3000);
+            }, 5000);
         },
 
         toggleIdentity() {
@@ -590,6 +597,18 @@ const IntroController = {
                 this.goToSlide(this.currentSlide, false);
             });
 
+            // Keyboard arrow key navigation
+            this.handleKeydown = (e) => {
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    this.prev();
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    this.next();
+                }
+            };
+            document.addEventListener('keydown', this.handleKeydown);
+
             // Handle transition end for seamless loop
             this.track.addEventListener('transitionend', () => this.checkLoop());
 
@@ -785,6 +804,68 @@ const IntroController = {
 
             window.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') closeModal();
+            });
+        }
+    };
+    
+
+
+    /* ==========================================================================
+       10b. NAVBAR SCROLL SPY — Active section highlighting
+       ========================================================================== */
+    const NavScrollSpyController = {
+        init() {
+            const sections = $$('section[id]');
+            const navLinks = $$('.nav-link[data-nav]');
+            const mobileLinks = $$('.mobile-link[data-nav]');
+            
+            if (!sections.length || !navLinks.length) return;
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute('id');
+                        this.setActiveNav(id);
+                    }
+                });
+            }, {
+                rootMargin: '-100px 0px -60% 0px',
+                threshold: 0.1
+            });
+
+            sections.forEach(section => observer.observe(section));
+
+            // Also handle click on nav links for immediate feedback
+            [...navLinks, ...mobileLinks].forEach(link => {
+                link.addEventListener('click', (e) => {
+                    const navId = link.getAttribute('data-nav');
+                    if (navId) {
+                        this.setActiveNav(navId);
+                    }
+                });
+            });
+        },
+
+        setActiveNav(id) {
+            const navLinks = $$('.nav-link[data-nav]');
+            const mobileLinks = $$('.mobile-link[data-nav]');
+            
+            // Handle special cases
+            let targetId = id;
+            if (id === 'contactSection') targetId = 'contact';
+            if (id === 'resume') targetId = 'resume';
+            if (id === 'achievements') targetId = 'achievements';
+            if (id === 'skills') targetId = 'skills';
+            if (id === 'about') targetId = 'about';
+            if (id === 'home') targetId = 'home';
+
+            [...navLinks, ...mobileLinks].forEach(link => {
+                const linkNav = link.getAttribute('data-nav');
+                if (linkNav === targetId) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
             });
         }
     };
@@ -1235,6 +1316,7 @@ const CodexBookController = (function () {
         render();
         stage.classList.add('is-open');
         spread.setAttribute('aria-hidden', 'false');
+        $('#bookOpenPrompt')?.setAttribute('aria-hidden', 'true');
         $('#bookControls')?.classList.add('is-visible');
         hint?.classList.add('is-visible');
         setTimeout(() => showToast('The Virtual Tour is open. Turn the leaves.', 2600), 1200);
@@ -1245,6 +1327,7 @@ const CodexBookController = (function () {
         isOpen = false;
         stage.classList.remove('is-open');
         spread.setAttribute('aria-hidden', 'true');
+        $('#bookOpenPrompt')?.setAttribute('aria-hidden', 'false');
         $('#bookControls')?.classList.remove('is-visible');
         hint?.classList.remove('is-visible');
     }
@@ -1269,8 +1352,23 @@ const CodexBookController = (function () {
         folioCurrent = $('#bookFolioCurrent');
         folioTotal = $('#bookFolioTotal');
         hint = $('.book-keyboard-hint');
+        const openPrompt = $('#bookOpenPrompt');
 
         if (!stage || !cover || !pageLeft || !leaf) return;
+
+        if (openPrompt) {
+            if ('IntersectionObserver' in window) {
+                const promptObserver = new IntersectionObserver((entries) => {
+                    if (entries.some(entry => entry.isIntersecting)) {
+                        openPrompt.classList.add('is-visible');
+                        promptObserver.disconnect();
+                    }
+                });
+                promptObserver.observe(openPrompt);
+            } else {
+                openPrompt.classList.add('is-visible');
+            }
+        }
 
         spreads = buildSpreads();
         mobilePages = [...works, { colophon: true }];
@@ -1879,6 +1977,7 @@ const CodexBookController = (function () {
         TechWallController.init();
         CountUpController.init();
         CertCarouselController.init();
+        NavScrollSpyController.init();
         ResumePaperController.init();
         MosaicGalleryController.init();
         CodexBookController.init();

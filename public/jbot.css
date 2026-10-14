@@ -1,250 +1,495 @@
 /* ===========================================================================
    J BOT — Cinematic Floating Assistant
-   Black/white editorial language with accent-blue accents, glass surfaces,
-   a personal avatar, and lightweight state animations.
-   Theme-aware via the site's shared design tokens (no conflict with the
-   site header toggle — both write the same data-theme attribute).
+   Black / white / silver editorial language with the site's accent color.
+   Theme-agnostic: all colors read the site's shared CSS variables, so the
+   widget tracks the main navigation theme toggle automatically (no
+   second theme setting is created inside the widget).
    =========================================================================== */
 
 /* ---------------------------------------------------------------------------
-   Local token fallbacks (self-contained if site tokens are absent)
+   Token fallbacks (self-contained if site tokens are absent)
    ------------------------------------------------------------------------- */
 :root {
-  --jbot-accent: #2563eb;
-  --jbot-accent-soft: rgba(37, 99, 235, 0.15);
-  --jbot-accent-glow: rgba(37, 99, 235, 0.35);
+  --jbot-accent: var(--accent-blue, #2563eb);
+  --jbot-accent-glow: var(--accent-glow, rgba(37, 99, 235, 0.3));
   --jbot-radius: 18px;
-  --jbot-radius-pill: 22px;
   --jbot-ease: cubic-bezier(0.65, 0, 0.35, 1);
   --jbot-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-}
+  --jbot-transition: 0.35s var(--jbot-ease);
 
-:root {
-  --jb-bg: var(--bg-primary, #f5f5f0);
   --jb-surface: var(--bg-surface, #ffffff);
-  --jb-surface-glass: var(--bg-surface-glass, rgba(255, 255, 255, 0.78));
-  --jb-secondary: var(--bg-secondary, #ebebe5);
+  --jb-surface-glass: var(--bg-surface-glass, rgba(255, 255, 255, 0.8));
+  --jb-secondary: var(--bg-secondary, #f4f4f1);
   --jb-text: var(--text-primary, #080808);
   --jb-text-dim: var(--text-secondary, #404040);
   --jb-text-faint: var(--text-muted, #737373);
   --jb-border: var(--border-light, rgba(0, 0, 0, 0.08));
   --jb-border-strong: var(--border-medium, rgba(0, 0, 0, 0.16));
-  --jb-shadow: var(--shadow-elevated, 0 24px 64px rgba(0, 0, 0, 0.12));
-  --jb-font-display: var(--font-display, 'Syne', 'Space Grotesk', -apple-system, sans-serif);
-  --jb-font-mono: var(--font-mono, 'Space Mono', monospace);
-  --jb-font-sans: var(--font-sans, 'Inter', -apple-system, sans-serif);
-}
+  --jb-shadow-float: var(--shadow-medium, 0 12px 36px rgba(0, 0, 0, 0.08));
 
-[data-theme="dark"] {
-  --jbot-accent: #60a5fa;
-  --jbot-accent-soft: rgba(96, 165, 250, 0.15);
-  --jbot-accent-glow: rgba(96, 165, 250, 0.3);
-  --jb-bg: var(--bg-primary, #050505);
-  --jb-surface: var(--bg-surface, #121212);
-  --jb-surface-glass: var(--bg-surface-glass, rgba(18, 18, 18, 0.78));
-  --jb-secondary: var(--bg-secondary, #0d0d0d);
-  --jb-text: var(--text-primary, #f5f5f5);
-  --jb-text-dim: var(--text-secondary, #a3a3a3);
-  --jb-text-faint: var(--text-muted, #666666);
-  --jb-border: var(--border-light, rgba(255, 255, 255, 0.08));
-  --jb-border-strong: var(--border-medium, rgba(255, 255, 255, 0.16));
-  --jb-shadow: var(--shadow-elevated, 0 24px 64px rgba(0, 0, 0, 0.85));
+  /* Font fallbacks matching site */
+  --font-display: var(--font-display, 'Syne', 'Geist', -apple-system, sans-serif);
+  --font-sans: var(--font-sans, 'Geist', -apple-system, sans-serif);
+  --font-mono: var(--font-mono, 'Geist Mono', 'Space Mono', monospace);
 }
 
 /* ---------------------------------------------------------------------------
-   1. Widget shell + cinematic entrance
+   1. Widget shell + entrance
    ------------------------------------------------------------------------- */
 .jbot-widget {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  z-index: 99999;
-  font-family: var(--jb-font-sans);
+  z-index: 2147483000;
+  font-family: var(--font-sans, 'Inter', -apple-system, sans-serif);
   pointer-events: none;
   opacity: 0;
   transform: translateY(12px) scale(0.94);
-  animation: jbot-fade-in 0.45s var(--jbot-ease) forwards;
+  animation: jbot-widget-in 0.45s var(--jbot-ease-out) forwards;
 }
 
 .jbot-widget > * { pointer-events: auto; }
 
-@keyframes jbot-fade-in {
+.jbot-widget.jbot-ready {
+  pointer-events: none;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jbot-widget { animation: none; opacity: 1; transform: none; }
+  .jbot-toggle { animation: none; }
+}
+
+@keyframes jbot-widget-in {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+@keyframes jbot-float {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  25% { transform: translateY(-4px) translateX(2px); }
+  50% { transform: translateY(-2px) translateX(-1px); }
+  75% { transform: translateY(-6px) translateX(1px); }
+}
+
+/* Apply floating animation after entrance - only on the toggle, not the widget container */
+.jbot-toggle:not(.jbot-dragging):not(.jbot-dragging-active):not(:hover):not(:focus):not(:active) {
+  animation: jbot-float 6s ease-in-out infinite;
+  animation-delay: 0.45s;
+}
+
 /* ---------------------------------------------------------------------------
-   2. Floating launcher (avatar)
+   2. Floating launcher (avatar) - BIGGER, NO BACKGROUND ON HOVER
    ------------------------------------------------------------------------- */
 .jbot-toggle {
-  width: 54px;
-  height: 54px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, var(--jbot-accent), #2563eb 70%);
-  color: #ffffff;
+  background: transparent;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow:
-    0 8px 22px var(--jbot-accent-glow),
-    0 0 0 2px rgba(255, 255, 255, 0.35);
-  transition: var(--jbot-ease-out);
+  box-shadow: none;
+  transition: var(--jbot-transition);
   position: relative;
-  overflow: hidden;
-  padding: 0;
-}
-
-[data-theme="dark"] .jbot-toggle {
-  background: linear-gradient(135deg, var(--jbot-accent), #60a5fa 70%);
-  box-shadow:
-    0 8px 22px var(--jbot-accent-glow),
-    0 0 0 2px rgba(255, 255, 255, 0.18);
+  overflow: visible;
+  outline: none;
 }
 
 .jbot-toggle:hover {
-  transform: scale(1.07);
-  box-shadow:
-    0 12px 28px var(--jbot-accent-glow),
-    0 0 0 2px rgba(255, 255, 255, 0.45);
+  transform: scale(1.1);
 }
 
-.jbot-toggle:active {
-  transform: scale(0.96);
-}
+.jbot-toggle:active { transform: scale(0.93); }
 
 .jbot-toggle:focus-visible {
   outline: 2px solid var(--jbot-accent);
   outline-offset: 4px;
 }
 
+/* Subtle hover glow that respects reduced motion */
+@media (prefers-reduced-motion: no-preference) {
+  .jbot-toggle:hover {
+    animation: jbot-launcher-pulse 2.8s ease-in-out infinite;
+  }
+}
+
+@keyframes jbot-launcher-pulse {
+  0%, 100% { box-shadow: 0 0 0 0px var(--jbot-accent-glow); }
+  50% { box-shadow: 0 0 28px 10px var(--jbot-accent-glow); }
+}
+
+/* Dragging state */
+.jbot-toggle.jbot-dragging {
+  cursor: grabbing;
+  transform: scale(1.15);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.35);
+  z-index: 2147483001;
+}
+
+.jbot-widget.jbot-dragging .jbot-toggle {
+  pointer-events: none;
+}
+
+/* Disable floating animation while dragging */
+.jbot-widget.jbot-dragging {
+  animation: none !important;
+}
+
 /* ---------------------------------------------------------------------------
-   3. Avatar (personal portrait) + monogram fallback
+   3. Avatar + monogram fallback - BIGGER AVATAR
    ------------------------------------------------------------------------- */
 .jbot-avatar {
-  width: 38px;
-  height: 38px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid rgba(255, 255, 255, 0.55);
-  box-shadow: 0 0 0 0px rgba(255, 255, 255, 0);
-  animation: jbot-avatar-idle 3.2s var(--jbot-ease) infinite ease-in-out;
+  border: 3px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 
+    0 10px 28px rgba(0, 0, 0, 0.28),
+    0 0 0 2px rgba(255, 255, 255, 0.3),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  animation: jbot-avatar-idle 4s ease-in-out infinite;
 }
 
 [data-theme="dark"] .jbot-avatar {
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 
+    0 10px 28px rgba(0, 0, 0, 0.45),
+    0 0 0 2px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 .jbot-avatar--header {
-  width: 28px;
-  height: 28px;
-  animation-duration: 2.6s;
+  width: 36px;
+  height: 36px;
+  animation-duration: 3s;
 }
 
 @keyframes jbot-avatar-idle {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-2px) rotate(0.6deg); }
-}
+  0%, 100% { 
+    transform: translateY(0) rotate(0deg); 
+    box-shadow: 
+      0 10px 28px rgba(0, 0, 0, 0.28),
+      0 0 0 2px rgba(255, 255, 255, 0.3),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  }
+  50% { 
+    transform: translateY(-4px) rotate(0.5deg); 
+    box-shadow: 
+      0 14px 36px rgba(0, 0, 0, 0.32),
+      0 0 20px 5px rgba(255, 255, 255, 0.15),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  }
+} 
 
-/* Thinking state: dimmer + slow glow sway */
+
+/* Thinking: dimmer + slow pulse */
 .jbot-avatar--thinking {
-  opacity: 0.75;
-  filter: brightness(0.92) saturate(0.9);
-  animation: jbot-avatar-think 2.4s ease-in-out infinite;
+  opacity: 0.8;
+  filter: brightness(0.9);
+  animation: jbot-avatar-think 2.2s ease-in-out infinite;
 }
 
 @keyframes jbot-avatar-think {
-  0%, 100% { opacity: 0.75; filter: brightness(0.88) saturate(0.9) grayscale(10%); box-shadow: 0 0 0 0px rgba(96, 165, 250, 0.5); }
-  50% { opacity: 0.85; box-shadow: 0 0 0 8px rgba(96, 165, 250, 0); }
+  0%, 100% { 
+    opacity: 0.8; 
+    filter: brightness(0.88); 
+    box-shadow: 
+      0 8px 24px rgba(0, 0, 0, 0.25),
+      0 0 0 2px rgba(255, 255, 255, 0.3),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  }
+  50% { 
+    opacity: 0.9; 
+    filter: brightness(1); 
+    box-shadow: 
+      0 8px 24px rgba(0, 0, 0, 0.25),
+      0 0 20px 6px var(--jbot-accent-glow),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  }
 }
 
-/* Responding state: brief bright pulse */
+/* Responding: bright + expanding ring */
 .jbot-avatar--responding {
   animation: jbot-avatar-respond 0.9s ease-in-out 2;
 }
 
 @keyframes jbot-avatar-respond {
-  0% { filter: brightness(1.15) saturate(1.15); box-shadow: 0 0 0 0px rgba(96, 165, 250, 0.6); }
-  50% { box-shadow: 0 0 0 10px rgba(96, 165, 250, 0); }
-  100% { filter: brightness(1); box-shadow: 0 0 0 0px rgba(96, 165, 250, 0); }
+  0% { 
+    filter: brightness(1.3) saturate(1.2); 
+    box-shadow: 
+      0 8px 24px rgba(0, 0, 0, 0.25),
+      0 0 0 0px var(--jbot-accent-glow),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  }
+  50% { 
+    box-shadow: 
+      0 8px 24px rgba(0, 0, 0, 0.25),
+      0 0 32px 16px var(--jbot-accent-glow),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  }
+  100% { 
+    filter: brightness(1); 
+    box-shadow: 
+      0 8px 24px rgba(0, 0, 0, 0.25),
+      0 0 0 0px var(--jbot-accent-glow),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  }
 }
 
-/* Monogram fallback shown only when the portrait fails to load */
+/* Monogram fallback — shown only if the image fails to load */
 .jbot-avatar-fallback {
   display: none;
-  font-family: var(--jb-font-display);
+  font-family: var(--font-display, 'Syne', -apple-system, sans-serif);
   font-weight: 900;
-  font-size: 20px;
-  letter-spacing: -0.03em;
-  color: #ffffff;
+  font-size: 28px;
+  color: var(--jb-text);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .jbot-avatar-fallback--header {
-  display: none;
-  font-size: 16px;
+  font-size: 18px;
 }
 
 /* ---------------------------------------------------------------------------
-   4. Chat panel
+   4. Floating label with pointer (shown after loading)
+   ------------------------------------------------------------------------- */
+.jbot-label {
+  position: fixed;
+  z-index: 2147483000;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%) translateY(8px) scale(0.95);
+  transition: opacity 0.4s var(--jbot-ease), visibility 0.4s var(--jbot-ease), transform 0.4s var(--jbot-ease);
+}
+
+.jbot-label-content {
+  background: var(--jb-surface-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--jb-border);
+  border-radius: 16px;
+  padding: 14px 20px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.4);
+  min-width: 180px;
+  max-width: 240px;
+  text-align: center;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.jbot-label-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--jbot-accent), #60A5FA, var(--jbot-accent));
+  background-size: 200% 100%;
+  animation: jbot-label-shimmer 2s linear infinite;
+}
+
+@keyframes jbot-label-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.jbot-label-title {
+  display: block;
+  font-family: var(--font-display, 'Syne', -apple-system, sans-serif);
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--jb-text);
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.jbot-label--typing .jbot-label-title {
+  border-right: 2px solid var(--jbot-accent);
+  animation: jbot-typewriter 1.8s steps(24, end) 0.15s forwards, jbot-blink-caret 0.75s step-end 3;
+  max-width: 0;
+}
+
+.jbot-label-desc {
+  display: block;
+  font-family: var(--font-sans, 'Inter', -apple-system, sans-serif);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--jb-text-dim);
+  margin-top: 6px;
+  line-height: 1.3;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.jbot-label--typing .jbot-label-desc {
+  opacity: 0;
+  transform: translateY(4px);
+  animation: jbot-fade-in 0.4s ease 1.8s forwards;
+}
+
+@keyframes jbot-typewriter {
+  from { max-width: 0; }
+  to { max-width: 100%; }
+}
+
+@keyframes jbot-blink-caret {
+  from, to { border-color: transparent; }
+  50% { border-color: var(--jbot-accent); }
+}
+
+@keyframes jbot-fade-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.jbot-label-pointer {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border: 8px solid transparent;
+  border-top-color: var(--jb-border);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+  z-index: -1;
+}
+
+.jbot-label-pointer::before {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border: 7px solid transparent;
+  border-top-color: var(--jb-surface-glass);
+  top: -14px;
+  left: -7px;
+}
+
+/* Animate pointer entrance */
+.jbot-label[style*="opacity: 1"] .jbot-label-pointer {
+  animation: jbot-pointer-in 0.3s ease 2.2s forwards;
+  opacity: 0;
+}
+
+@keyframes jbot-pointer-in {
+  from { opacity: 0; transform: scale(0.5) rotate(0deg); }
+  to { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+/* ---------------------------------------------------------------------------
+   4b. Resize handle
+   ------------------------------------------------------------------------- */
+.jbot-resize-handle {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 80px;
+  height: 80px;
+  z-index: 2147482999;
+  cursor: se-resize;
+  background: linear-gradient(135deg, transparent 50%, var(--jbot-accent-glow) 50%);
+  border-radius: 0 0 0 50%;
+  opacity: 0.15;
+  transition: opacity 0.2s ease, background 0.2s ease;
+  pointer-events: auto;
+}
+
+.jbot-resize-handle:hover,
+.jbot-resize-handle:focus-visible {
+  opacity: 0.4;
+  background: linear-gradient(135deg, transparent 50%, var(--jbot-accent) 50%);
+  outline: none;
+}
+
+.jbot-resize-handle:focus-visible {
+  outline: 2px solid var(--jbot-accent);
+  outline-offset: 2px;
+}
+
+.jbot-widget.jbot-dragging .jbot-resize-handle,
+.jbot-widget.jbot-resizing .jbot-resize-handle {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jbot-resize-handle { display: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   5. Chat panel
    ------------------------------------------------------------------------- */
 .jbot-chat {
   position: absolute;
-  bottom: 70px;
+  bottom: 84px;
   right: 0;
-  width: 360px;
-  max-height: 540px;
+  width: 380px;
+  max-height: 600px;
   background: var(--jb-surface-glass);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   color: var(--jb-text);
   border: 1px solid var(--jb-border);
   border-radius: var(--jbot-radius);
-  box-shadow:
-    0 22px 48px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.45);
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.4);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translateY(14px) scale(0.97);
+  transform: translateY(16px) scale(0.96);
   transition:
     opacity 0.35s var(--jbot-ease),
-    transform 0.45s var(--jbot-ease),
-    visibility 0.45s var(--jbot-ease),
-    box-shadow 0.45s var(--jbot-ease);
+    transform 0.5s var(--jbot-ease),
+    visibility 0.5s var(--jbot-ease),
+    box-shadow 0.5s var(--jbot-ease);
 }
 
-.jbot-chat.active {
+.jbot-chat--open,
+.jbot-chat--minimized {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
   transform: translateY(0) scale(1);
-  box-shadow:
-    0 26px 56px rgba(0, 0, 0, 0.34),
-    0 0 0 1px rgba(255, 255, 255, 0.45),
-    0 0 28px var(--jbot-accent-glow);
 }
 
-/* Film-grain noise texture */
+.jbot-chat--minimized .jbot-welcome,
+.jbot-chat--minimized #jbot-suggestions,
+.jbot-chat--minimized .jbot-messages,
+.jbot-chat--minimized .jbot-input-row {
+  display: none;
+}
+
+/* Subtle noise */
 .jbot-chat::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: var(--jbot-radius);
   pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
   opacity: 0.5;
   mix-blend-mode: overlay;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .jbot-chat, .jbot-chat--open, .jbot-chat--minimized {
+    transition: none;
+  }
+}
+
 /* ---------------------------------------------------------------------------
-   5. Header (avatar + title | controls)
+   6. Header
    ------------------------------------------------------------------------- */
 .jbot-header {
   position: relative;
-  padding: 12px 14px;
+  padding: 14px 16px;
   background: rgba(0, 0, 0, 0.04);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--jb-border);
@@ -254,20 +499,33 @@
   z-index: 1;
 }
 
-[data-theme="dark"] .jbot-header { background: rgba(255, 255, 255, 0.03); }
+[data-theme="dark"] .jbot-header { background: rgba(255, 255, 255, 0.04); }
 
 .jbot-header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  cursor: pointer;
 }
 
-.jbot-title {
-  font-family: var(--jb-font-display);
+.jbot-header-title {
+  display: flex;
+  flex-direction: column;
+}
+
+.jbot-name {
+  font-family: var(--font-display, 'Syne', -apple-system, sans-serif);
   font-weight: 800;
   font-size: 15px;
-  letter-spacing: -0.02em;
   color: var(--jb-text);
+}
+
+.jbot-subtitle {
+  font-family: var(--font-sans, 'Inter', -apple-system, sans-serif);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--jb-text-faint);
+  letter-spacing: 0.04em;
 }
 
 .jbot-header-actions {
@@ -277,22 +535,23 @@
 }
 
 .jbot-control {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 10px;
   border: 1px solid var(--jb-border);
   background: var(--jb-surface-glass);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(4px);
   color: var(--jb-text-dim);
-  font-family: var(--jb-font-sans);
-  font-size: 12px;
+  font-family: var(--font-sans, 'Inter', -apple-system, sans-serif);
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: var(--jbot-ease-out);
-  padding: 0 6px;
+  padding: 0 4px;
+  transition: var(--jbot-transition);
+  outline: none;
 }
 
 .jbot-control:focus-visible {
@@ -307,62 +566,48 @@
   transform: scale(1.08);
 }
 
-.jbot-clear {
-  font-size: 11px;
-  padding: 0 8px;
-  border-radius: 8px;
-}
+.jbot-close { width: 32px; height: 32px; font-size: 14px; }
+.jbot-min { width: 32px; height: 32px; }
+.jbot-clear { width: 32px; height: 32px; font-size: 16px; }
 
-.jbot-theme-toggle {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  padding: 0;
-  font-size: 16px;
-}
-
-.jbot-close {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  font-size: 14px;
-}
+/* Retry sits in the input row; hidden unless active */
+.jbot-retry { display: none; }
 
 /* ---------------------------------------------------------------------------
-   6. Welcome note
+   7. Welcome note
    ------------------------------------------------------------------------- */
 .jbot-welcome {
-  padding: 14px 16px;
+  padding: 16px 18px;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--jb-text-dim);
   background: var(--jb-secondary);
   border-bottom: 1px solid var(--jb-border);
-  font-family: var(--jb-font-sans);
+  font-family: var(--font-sans, 'Inter', -apple-system, sans-serif);
 }
 
 [data-theme="dark"] .jbot-welcome { background: #1e293b; }
 
 .jbot-welcome::before {
   content: "J BOT";
-  font-family: var(--jb-font-mono);
-  font-size: 10px;
+  font-family: var(--font-mono, 'Space Mono', monospace);
+  font-size: 9px;
   font-weight: 700;
   color: var(--jbot-accent);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 /* ---------------------------------------------------------------------------
-   7. Suggestions
+   8. Suggestions - ALWAYS VISIBLE
    ------------------------------------------------------------------------- */
 .jbot-suggestions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 12px 16px;
+  padding: 14px 18px;
   background: var(--jb-surface);
   border-bottom: 1px solid var(--jb-border);
 }
@@ -371,41 +616,42 @@
   flex: 1 1 calc(50% - 8px);
   font-size: 12px;
   font-weight: 600;
-  font-family: var(--jb-font-sans);
-  padding: 8px 10px;
-  border-radius: var(--jbot-radius-pill);
+  font-family: var(--font-sans, 'Inter', -apple-system, sans-serif);
+  padding: 10px 12px;
+  border-radius: var(--jbot-radius);
   border: 1px solid var(--jb-border);
   background: var(--jb-surface-glass);
   color: var(--jb-text-dim);
   cursor: pointer;
-  transition: var(--jbot-ease-out);
+  transition: var(--jbot-transition);
   text-align: center;
+  outline: none;
+  min-width: 140px;
 }
 
-.jbot-suggest:hover {
+.jbot-suggest:hover,
+.jbot-suggest:focus-visible {
   background: var(--jbot-accent);
   color: #ffffff;
   border-color: var(--jbot-accent);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px var(--jbot-accent-glow);
+  box-shadow: 0 8px 20px var(--jbot-accent-glow);
 }
 
-.jbot-suggest:active { transform: translateY(0); }
-
 /* ---------------------------------------------------------------------------
-   8. Messages
+   9. Messages
    ------------------------------------------------------------------------- */
 .jbot-messages {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 14px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   font-size: 13px;
-  line-height: 1.5;
-  font-family: var(--jb-font-sans);
+  line-height: 1.55;
+  font-family: var(--font-sans, 'Inter', -apple-system, sans-serif);
   scrollbar-width: thin;
   scrollbar-color: var(--jbot-accent) transparent;
 }
@@ -417,123 +663,110 @@
   border-radius: 10px;
   opacity: 0.35;
 }
-.jbot-messages::-webkit-scrollbar-thumb:hover { opacity: 0.6; }
+.jbot-messages::-webkit-scrollbar-thumb:hover { opacity: 0.55; }
 
 .jbot-msg {
-  padding: 10px 14px;
-  border-radius: var(--jbot-radius);
   max-width: 85%;
+  padding: 12px 16px;
+  border-radius: var(--jbot-radius);
   white-space: pre-wrap;
   word-wrap: break-word;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.55;
   position: relative;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .jbot-user {
   align-self: flex-end;
-  border-radius: 18px 6px 18px 18px;
-  background: linear-gradient(135deg, var(--jbot-accent), #2563eb 65%);
-  color: #ffffff;
+  border-radius: 20px 6px 20px 20px;
+  background: var(--jb-text);
+  color: var(--jb-bg, #f5f5f0);
   border: none;
-  box-shadow: 0 4px 14px var(--jbot-accent-glow);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
 }
 
 [data-theme="dark"] .jbot-user {
-  background: linear-gradient(135deg, var(--jbot-accent), #60a5fa 65%);
+  background: #f5f5f5;
+  color: #050505;
 }
 
 .jbot-user::after {
   content: "";
   position: absolute;
-  bottom: -6px;
-  right: -6px;
-  border: 6px solid transparent;
-  border-top-color: var(--jbot-accent);
+  bottom: -8px;
+  right: -8px;
+  border: 8px solid transparent;
+  border-top-color: var(--jb-text);
 }
 
-[data-theme="dark"] .jbot-user::after { border-top-color: var(--jbot-accent); }
+[data-theme="dark"] .jbot-user::after { border-top-color: #f5f5f5; }
 
 .jbot-bot {
   align-self: flex-start;
-  border-radius: 18px 18px 18px 6px;
+  border-radius: 20px 20px 20px 6px;
   background: var(--jb-surface-glass);
   backdrop-filter: blur(10px);
   color: var(--jb-text);
   border: 1px solid var(--jb-border);
   border-left-color: var(--jbot-accent);
-}
-
-[data-theme="dark"] .jbot-bot {
-  background: rgba(255, 255, 255, 0.04);
-  border-left-color: var(--jbot-accent);
+  border-left-width: 3px;
 }
 
 .jbot-bot::after {
   content: "";
   position: absolute;
-  top: 18px;
-  left: -10px;
-  border: 6px solid transparent;
+  top: 20px;
+  left: -12px;
+  border: 8px solid transparent;
   border-right-color: var(--jb-surface-glass);
 }
 
-[data-theme="dark"] .jbot-bot::after {
-  border-right-color: rgba(255, 255, 255, 0.04);
-}
-
 .jbot-msg--error {
-  border-left-color: #f59e0b !important;
-  background: rgba(245, 158, 11, 0.08);
+  border-left-color: #d97706 !important;
+  background: rgba(217, 119, 6, 0.08);
 }
 
-.jbot-msg--error::after { border-right-color: rgba(245, 158, 11, 0.12) !important; }
+.jbot-msg--error::after { border-right-color: rgba(217, 119, 6, 0.1) !important; }
 
 /* Typing indicator — animated ellipsis */
 .jbot-typing {
   align-self: flex-start;
-  font-size: 11px;
-  font-family: var(--jb-font-mono);
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--jb-text-faint);
-  padding: 8px 14px;
-  border-radius: 18px 18px 18px 6px;
+  padding: 10px 16px;
+  border-radius: 20px 20px 20px 6px;
   background: var(--jb-surface-glass);
   border: 1px solid var(--jb-border);
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .jbot-typing-dot {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: var(--jbot-accent);
+  background: var(--jb-text-faint);
   display: inline-block;
-  animation: jbot-typing-bounce 1.3s ease-in-out infinite both;
+  animation: jbot-typing-bounce 1.4s ease-in-out infinite both;
 }
 
-.jbot-typing-dot:nth-child(1) { animation-delay: -0.26s; }
-.jbot-typing-dot:nth-child(2) { animation-delay: -0.12s; }
+.jbot-typing-dot:nth-child(1) { animation-delay: -0.28s; }
+.jbot-typing-dot:nth-child(2) { animation-delay: -0.14s; }
 
 @keyframes jbot-typing-bounce {
-  0%, 76% { transform: translateY(0) scale(0.9); opacity: 0.4; }
-  40% { transform: translateY(-6px) scale(1); opacity: 1; }
+  0%, 76% { opacity: 0.35; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-6px); }
 }
 
 /* ---------------------------------------------------------------------------
-   9. Input row
+   10. Input row
    ------------------------------------------------------------------------- */
 .jbot-input-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
+  gap: 10px;
+  padding: 14px 18px;
   background: var(--jb-surface);
   border-top: 1px solid var(--jb-border);
 }
@@ -542,16 +775,16 @@
 
 .jbot-input {
   flex: 1;
-  padding: 10px 14px;
-  border-radius: 12px;
+  padding: 12px 16px;
+  border-radius: 14px;
   border: 1px solid var(--jb-border);
   font-size: 13px;
-  font-family: var(--jb-font-sans);
+  font-family: var(--font-sans, 'Inter', -apple-system, sans-serif);
   background: var(--jb-surface-glass);
   color: var(--jb-text);
   outline: none;
-  transition: var(--jbot-ease-out);
-  backdrop-filter: blur(6px);
+  transition: var(--jbot-transition);
+  backdrop-filter: blur(4px);
 }
 
 .jbot-input::placeholder {
@@ -561,75 +794,75 @@
 
 .jbot-input:focus {
   border-color: var(--jbot-accent);
-  box-shadow: 0 0 0 3px var(--jbot-accent-soft);
   background: var(--jb-surface);
+  box-shadow: 0 0 0 3px var(--jbot-accent-glow);
 }
 
-.jbot-input:disabled { opacity: 0.5; }
-
 .jbot-send {
-  padding: 10px 16px;
-  border-radius: 12px;
+  padding: 12px 20px;
+  border-radius: 14px;
   border: none;
-  background: linear-gradient(135deg, var(--jbot-accent), #2563eb 65%);
-  color: #ffffff;
-  font-family: var(--jb-font-display);
+  background: var(--jb-text);
+  color: var(--jb-bg, #f5f5f0);
+  font-family: var(--font-display, 'Syne', -apple-system, sans-serif);
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
-  transition: var(--jbot-ease-out);
-  box-shadow: 0 4px 14px var(--jbot-accent-glow);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  transition: var(--jbot-transition);
   letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 [data-theme="dark"] .jbot-send {
-  background: linear-gradient(135deg, var(--jbot-accent), #60a5fa 65%);
+  background: #f5f5f5;
+  color: #050505;
 }
 
 .jbot-send:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px var(--jbot-accent-glow);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2);
 }
 
 .jbot-send:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none;
-  box-shadow: 0 0 0 0px transparent;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
-/* Retry button — only shown when active */
+/* Retry button in the input row — visible only when active */
 .jbot-retry {
   display: none;
-  padding: 8px 12px;
-  border-radius: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
   border: 1px dashed var(--jb-border);
   background: var(--jb-surface-glass);
   color: var(--jbot-accent);
-  font-family: var(--jb-font-mono);
+  font-family: var(--font-mono, 'Space Mono', monospace);
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
-  transition: var(--jbot-ease-out);
+  transition: var(--jbot-transition);
+  white-space: nowrap;
 }
 
-.jbot-retry--active,
-.jbot-retry--active:hover { display: inline-flex; }
+.jbot-retry--active { display: inline-flex; }
 
 .jbot-retry:hover {
   background: var(--jbot-accent);
-  color: #ffffff;
+  color: var(--jb-bg, #f5f5f0);
   border-color: var(--jbot-accent);
   box-shadow: 0 4px 14px var(--jbot-accent-glow);
 }
 
 /* ---------------------------------------------------------------------------
-   10. Footer
+   11. Footer
    ------------------------------------------------------------------------- */
 .jbot-footer {
-  padding: 8px 12px;
+  padding: 10px 14px;
   font-size: 9px;
-  font-family: var(--jb-font-mono);
+  font-family: var(--font-mono, 'Space Mono', monospace);
   font-weight: 700;
   letter-spacing: 0.12em;
   text-align: center;
@@ -642,19 +875,121 @@
 [data-theme="dark"] .jbot-footer { background: #1e293b; }
 
 /* ---------------------------------------------------------------------------
-   11. Responsive
+   12. Responsive
    ------------------------------------------------------------------------- */
-@media (max-width: 420px) {
-  .jbot-widget { bottom: 16px; right: 16px; }
-  .jbot-chat { width: 90vw; max-width: 360px; bottom: 64px; }
-  .jbot-input-row { padding: 10px 14px; }
-  .jbot-header { padding: 10px 12px; }
-  .jbot-suggestions { padding: 10px 14px; }
-  .jbot-messages { padding: 12px; font-size: 13px; }
-  .jbot-suggest { flex: 1 1 100%; }
+@media (max-width: 480px) {
+  .jbot-widget { 
+    bottom: 0; 
+    right: 0; 
+    left: 0;
+    height: 100vh;
+  }
+  .jbot-toggle { 
+    width: 64px; 
+    height: 64px; 
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+  }
+  .jbot-avatar { width: 48px; height: 48px; }
+  .jbot-chat { 
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    z-index: 2147483001;
+  }
+  .jbot-suggest { flex: 1 1 100%; min-width: 0; }
+  .jbot-header-actions .jbot-control { width: 40px; height: 40px; font-size: 14px; }
+  .jbot-name { font-size: 14px; }
+  .jbot-input-row { flex-wrap: wrap; }
+  .jbot-send { flex: 1; }
+  .jbot-retry { width: 100%; justify-content: center; }
+  
+  /* Ensure messages are visible on mobile */
+  .jbot-messages {
+    flex: 1;
+    min-height: 200px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .jbot-msg {
+    max-width: 90%;
+    font-size: 12px;
+    line-height: 1.5;
+    padding: 10px 14px;
+  }
+  
+  /* Make header controls clearly visible on mobile */
+  .jbot-header {
+    padding: 16px;
+  }
+  .jbot-control {
+    background: var(--jb-surface);
+    border: 2px solid var(--jb-border);
+    color: var(--jb-text);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  .jbot-control:hover,
+  .jbot-control:active {
+    background: var(--jbot-accent);
+    border-color: var(--jbot-accent);
+    color: #fff;
+    transform: scale(1.1);
+  }
+  .jbot-close { width: 36px; height: 36px; font-size: 18px; }
+  .jbot-min { width: 36px; height: 36px; }
+  .jbot-clear { width: 36px; height: 36px; font-size: 16px; }
 }
 
-@media (max-width: 340px) {
-  .jbot-control { width: 28px; height: 28px; font-size: 10px; }
-  .jbot-title { font-size: 13px; }
+@media (max-width: 360px) {
+  .jbot-toggle { width: 60px; height: 60px; }
+  .jbot-avatar { width: 44px; height: 44px; }
+  .jbot-chat { 
+    width: 100vw; 
+    border-radius: 0; 
+    top: 0;
+    bottom: 76px; 
+    max-height: none;
+  }
+  
+  /* Ensure messages are visible on very small screens */
+  .jbot-messages {
+    min-height: 220px;
+  }
+  
+  .jbot-msg {
+    max-width: 95%;
+    font-size: 11px;
+    padding: 8px 12px;
+  }
+  
+  /* Header controls on very small screens */
+  .jbot-header-actions .jbot-control { width: 36px; height: 36px; font-size: 13px; }
+  .jbot-close { width: 32px; height: 32px; font-size: 16px; }
+  .jbot-min { width: 32px; height: 32px; }
+  .jbot-clear { width: 32px; height: 32px; font-size: 14px; }
+}
+
+@media (max-width: 480px) {
+  .jbot-chat.jbot-chat--minimized {
+    top: auto;
+    right: 16px;
+    bottom: 88px;
+    left: auto;
+    width: min(380px, calc(100vw - 32px));
+    height: auto;
+    max-height: none;
+    border-radius: var(--jbot-radius);
+  }
+
+  .jbot-chat--minimized .jbot-footer {
+    display: none;
+  }
 }
