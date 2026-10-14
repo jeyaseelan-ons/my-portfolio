@@ -1,0 +1,19 @@
+{
+  "name": "jeyaseelan-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev --listen 3000",
+    "build": "echo 'Static site + API functions'"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.64.0",
+    "node-fetch": "^3.3.2",
+    "openai": "^4.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
